@@ -18,7 +18,7 @@ let rooms = {};
 const argv = minimst(process.argv.slice(2), {
     default: {
         //as_uri: 'http://localhost:3000',
-        as_uri: 'https://localhost:3000',
+        as_uri: 'http://localhost:3000',
         ws_uri: 'ws://13.124.5.88:8888/kurento',
         ice_servers: [
             "stun:stun.l.google.com:19302",
