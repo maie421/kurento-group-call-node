@@ -37,4 +37,4 @@ jspm_packages
 .node_repl_history
 
 
-server/static/bower_components
+#server/static/bower_components
