@@ -1,7 +1,6 @@
 
 import path from 'path';
 import url from 'url';
-import https from 'https';
 import http from 'http';
 
 import express from 'express';
