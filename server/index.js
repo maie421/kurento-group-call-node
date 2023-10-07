@@ -7,6 +7,7 @@ import express from 'express';
 import kurento from 'kurento-client';
 import socketIO from 'socket.io';
 import minimst from 'minimist';
+import cors from 'cors';
 
 import { Session, Register } from './lib';
 
@@ -30,6 +31,7 @@ const argv = minimst(process.argv.slice(2), {
 
 /////////////////////////// https ///////////////////////////////
 let app = express();
+app.use(cors());
 
 let asUrl = url.parse(argv.as_uri);
 let port = asUrl.port;
