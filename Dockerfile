@@ -6,6 +6,7 @@ WORKDIR /usr/src/app
 # 와일드카드를 사용
 COPY package*.json ./
 RUN npm install bower -g
+RUN npm run get
 # 프로덕션을 위한 코드를 빌드하는 경우
 # RUN npm ci --omit=dev
 # 앱 소스 추가
