@@ -21,29 +21,28 @@ const argv = minimst(process.argv.slice(2), {
     default: {
         //as_uri: 'http://localhost:3000',
         as_uri: 'https://localhost:3000',
-        ws_uri: 'ws://54.223.104.239:8888/kurento'
+        ws_uri: 'ws://13.124.5.88:8888/kurento',
+        ice_servers: [
+            "stun:stun.l.google.com:19302",
+            "stun:stun1.l.google.com:19302",
+        ],
     }
 });
 
 
 /////////////////////////// https ///////////////////////////////
-const options = {
-    key: fs.readFileSync('./server/keys/server.key'),
-    cert: fs.readFileSync('./server/keys/server.crt')
-};
-
 let app = express();
 
 let asUrl = url.parse(argv.as_uri);
 let port = asUrl.port;
-let server = https.createServer(options, app).listen(port, () => {
-    console.log('Kurento Group Call started');
-    console.log('Open %s with a WebRTC capable brower.', url.format(asUrl));
-});
-
-// let server = http.createServer(app).listen(port, () => {
-//      console.log('Kurento Group Call started');
+// let server = https.createServer(options, app).listen(port, () => {
+//     console.log('Kurento Group Call started');
+//     console.log('Open %s with a WebRTC capable brower.', url.format(asUrl));
 // });
+
+let server = http.createServer(app).listen(port, () => {
+     console.log('Kurento Group Call started');
+});
 
 /////////////////////////// websocket ///////////////////////////////
 
