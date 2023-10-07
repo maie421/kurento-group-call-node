@@ -1,4 +1,4 @@
-FROM node:16
+FROM node:20
 # 앱 디렉터리 생성
 WORKDIR /usr/src/app
 # 앱 의존성 설치
