@@ -15,8 +15,8 @@ export default class Session {
         this.socket = socket;
         this.name = userName;
         this.roomName = roomName;
-        this.outgoingMedia = null;
-        this.incomingMedia = {};
+        this.outgoingMedia = null; //보낸 사람 미디어
+        this.incomingMedia = {}; //들어오는미디어
         this.iceCandidateQueue = {};
     }
 

@@ -58,8 +58,6 @@ let io = socketIO(server).path('/groupcall');
 let wsUrl = url.parse(argv.ws_uri).href;
 
 io.on('connection', socket => {
-
-    // error handle
     socket.on('error', error => {
         console.error(`Connection %s error : %s`, socket.id, error);
     });
@@ -79,14 +77,14 @@ io.on('connection', socket => {
                     }
                 });
                 break;
-            case 'receiveVideoFrom':
+            case 'receiveVideoFrom': //보낸 사람으로 부터 비디오 수신
                 receiveVideoFrom(socket, message.sender, message.sdpOffer, (error) => {
                     if (error) {
                         console.error(error);
                     }
                 });
                 break;
-            case 'leaveRoom':
+            case 'leaveRoom': //방 나가기
                 leaveRoom(socket, (error) => {
                     if (error) {
                         console.error(error);
@@ -115,14 +113,11 @@ io.on('connection', socket => {
  * @param {*} callback 
  */
 function joinRoom(socket, message, callback) {
-
-    // get room 
     getRoom(message.roomName, (error, room) => {
         if (error) {
             callback(error);
             return;
         }
-        // join user to room
         join(socket, room, message.name, (err, user) => {
             console.log(`join success : ${user.name}`);
             if (err) {
@@ -135,7 +130,7 @@ function joinRoom(socket, message, callback) {
 }
 
 /**
- * Get room. Creates room if room does not exists
+ * 방 없으면 생성하고 방있으면 해당 방 정보 가져 오도록
  * 
  * @param {string} roomName 
  * @param {function} callback 
@@ -157,7 +152,7 @@ function getRoom(roomName, callback) {
                 room = {
                     name: roomName,
                     pipeline: pipeline,
-                    participants: {},
+                    participants: {}, //참가자들
                     kurentoClient: kurentoClient
                 };
 
@@ -181,11 +176,7 @@ function getRoom(roomName, callback) {
  * @param {*} callback 
  */
 function join(socket, room, userName, callback) {
-
-    // add user to session
     let userSession = new Session(socket, userName, room.name);
-
-    // register
     userRegister.register(userSession);
 
     room.pipeline.create('WebRtcEndpoint', (error, outgoingMedia) => {
@@ -197,29 +188,27 @@ function join(socket, room, userName, callback) {
             return callback(error);
         }
 
-        // else
+        //미디어 정보 사이즈 수정
         outgoingMedia.setMaxVideoRecvBandwidth(300);
         outgoingMedia.setMinVideoRecvBandwidth(100);
+        //미디어 정보 사이즈 저장
         userSession.setOutgoingMedia(outgoingMedia);
-    
 
         // add ice candidate the get sent before endpoint is established
         // socket.id : room iceCandidate Queue
         let iceCandidateQueue = userSession.iceCandidateQueue[userSession.name];
         if (iceCandidateQueue) {
             while (iceCandidateQueue.length) {
-                let message = iceCandidateQueue.shift();
+                let message = iceCandidateQueue.shift(); //첫 번째 요소를 제거하고, 제거된 요소를 반환
                 console.error(`user: ${userSession.id} collect candidate for outgoing media`);
                 userSession.outgoingMedia.addIceCandidate(message.candidate);
             }
         }
 
-        // ICE 
-        // listener
+        //ICE
         userSession.outgoingMedia.on('OnIceCandidate', event => {
-            // ka ka ka ka ka
-            // console.log(`generate outgoing candidate ${userSession.id}`);
             let candidate = kurento.register.complexTypes.IceCandidate(event.candidate);
+            // 현재 접속해있는 모든 클라이언트에게 이벤트 전달
             userSession.sendMessage({
                 id: 'iceCandidate',
                 name: userSession.name,
@@ -227,11 +216,9 @@ function join(socket, room, userName, callback) {
             });
         });
 
-         
          let usersInRoom = room.participants;
 
-
-        // notify other user that new user is joing
+         //다른 참가자로 부터 비디오를 수신하고 회의실에 추가
         for (let i in usersInRoom) {
             if (usersInRoom[i].name != userSession.name) {
                 usersInRoom[i].sendMessage({
@@ -241,21 +228,21 @@ function join(socket, room, userName, callback) {
             }
         }
 
-
-        // send list of current user in the room to current participant
         let existingUsers = [];
         for (let i in usersInRoom) {
             if (usersInRoom[i].name != userSession.name) {
                 existingUsers.push(usersInRoom[i].name);
             }
         }
+
+        //기존 화상 회의실에 새 참가자를 추가
         userSession.sendMessage({
             id: 'existingParticipants',
             data: existingUsers,
             roomName: room.name
         });
 
-        // register user to room
+        //방에 참가자 추가
         room.participants[userSession.name] = userSession;
 
         callback(null, userSession);
@@ -263,7 +250,7 @@ function join(socket, room, userName, callback) {
 }
 
 /**
- * receive video from sender
+ * 보낸 사람으로 부터 비디오 수신
  * 
  * @param {*} socket 
  * @param {*} senderName 
@@ -274,13 +261,13 @@ function receiveVideoFrom(socket, senderName, sdpOffer, callback) {
     let userSession = userRegister.getById(socket.id);
     let sender = userRegister.getByName(senderName);
 
-
     getEndpointForUser(userSession, sender, (error, endpoint) => {
         if (error) {
             console.error(error);
             callback(error);
         }
 
+        //원격 피어의 SDP 제안을 처리하고 엔드포인트의 기능을 기반으로 SDP 응답을 생성
         endpoint.processOffer(sdpOffer, (error, sdpAnswer) => {
             console.log(`process offer from ${sender.name} to ${userSession.name}`);
             if (error) {
@@ -293,6 +280,7 @@ function receiveVideoFrom(socket, senderName, sdpOffer, callback) {
             };
             userSession.sendMessage(data);
 
+            //후보자 모으기
             endpoint.gatherCandidates(error => {
                 if (error) {
                     return callback(error);
@@ -323,30 +311,30 @@ function leaveRoom(socket, callback) {
 
     console.log('notify all user that ' + userSession.name + ' is leaving the room ' + room.name);
     var usersInRoom = room.participants;
-    delete usersInRoom[userSession.name];
-    userSession.outgoingMedia.release();
-    
-    // release incoming media for the leaving user
+    delete usersInRoom[userSession.name]; //방안에 있는 본인 꺼 제거
+    userSession.outgoingMedia.release(); // 본인꺼 미디어 해제
+
     for (var i in userSession.incomingMedia) {
-        userSession.incomingMedia[i].release();
-        delete userSession.incomingMedia[i];
+        userSession.incomingMedia[i].release(); //본인 기준 본인제외 나머지 해제
+        delete userSession.incomingMedia[i]; //본인 기준 본인제외 나머지 삭제
     }
 
     var data = {
         id: 'participantLeft',
         name: userSession.name
     };
+
+    //상대방 기준
     for (var i in usersInRoom) {
         var user = usersInRoom[i];
-        // release viewer from this
+
         user.incomingMedia[userSession.name].release();
         delete user.incomingMedia[userSession.name];
-
-        // notify all user in the room
+        //참여자가 회의 또는 채팅에서 나간 경우 그 참여자의 데이터를 정리하고 삭제
         user.sendMessage(data);
     }
 
-    // Release pipeline and delete room when room is empty
+    //참여자가 없다면 방 없애기
     if (Object.keys(room.participants).length == 0) {
         room.pipeline.release();
         delete rooms[userSession.roomName];
@@ -398,8 +386,8 @@ function addIceCandidate(socket, message, callback) {
  * @param {*} callback 
  */
 function getEndpointForUser(userSession, sender, callback) {
-
-    if (userSession.name === sender.name) { 
+    //본인
+    if (userSession.name === sender.name) {
         return callback(null, userSession.outgoingMedia);
     }
 

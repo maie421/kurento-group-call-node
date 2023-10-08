@@ -77,6 +77,7 @@ function onNewParticipant(request) {
 }
 
 function receiveVideoResponse(result) {
+	//미디어 기능으로 SDP 제안 생성
 	participants[result.name].rtcPeer.processAnswer (result.sdpAnswer, function (error) {
 		if (error) return console.error (error);
 	});

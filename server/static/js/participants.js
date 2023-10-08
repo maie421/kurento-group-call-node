@@ -73,7 +73,7 @@ function Participant(name) {
 
 	this.offerToReceiveVideo = function(error, offerSdp, wp){
 		if (error) return console.error ("sdp offer error")
-		console.log('Invoking SDP offer callback function');
+		console.log('SDP 제안 콜백 기능 호출');
 		var msg =  {
 				id : "receiveVideoFrom",
 				sender : name,
