@@ -2,6 +2,8 @@
 import path from 'path';
 import url from 'url';
 import http from 'http';
+import https from 'https';
+import fs from 'fs';
 
 import express from 'express';
 import kurento from 'kurento-client';
@@ -19,7 +21,7 @@ let rooms = {};
 const argv = minimst(process.argv.slice(2), {
     default: {
         //as_uri: 'http://localhost:3000',
-        as_uri: 'http://localhost:3000',
+        as_uri: 'https://localhost:3000',
         ws_uri: 'ws://13.124.5.88:8888/kurento',
         ice_servers: [
             "stun:stun.l.google.com:19302",
@@ -35,14 +37,20 @@ app.use(cors());
 
 let asUrl = url.parse(argv.as_uri);
 let port = asUrl.port;
-// let server = https.createServer(options, app).listen(port, () => {
-//     console.log('Kurento Group Call started');
-//     console.log('Open %s with a WebRTC capable brower.', url.format(asUrl));
-// });
 
-let server = http.createServer(app).listen(port, () => {
-     console.log('Kurento Group Call started');
+const options = {
+    key: fs.readFileSync('./server/keys/server.key'),
+    cert: fs.readFileSync('./server/keys/server.crt')
+};
+
+let server = https.createServer(options, app).listen(port, () => {
+    console.log('Kurento Group Call started');
+    console.log('Open %s with a WebRTC capable brower.', url.format(asUrl));
 });
+
+// let server = http.createServer(app).listen(port, () => {
+//      console.log('Kurento Group Call started');
+// });
 
 /////////////////////////// websocket ///////////////////////////////
 
