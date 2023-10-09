@@ -65,7 +65,8 @@ export default class Session {
      */
     sendMessage(data) {
         if (this.socket) {
-            this.socket.emit('message', data);
+            var jsonMessage = JSON.stringify(data);
+            this.socket.send(jsonMessage);
         } else {
             console.error('socket is null');
         }

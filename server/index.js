@@ -6,7 +6,6 @@ import fs from 'fs';
 
 import express from 'express';
 import kurento from 'kurento-client';
-import socketIO from 'socket.io';
 import minimst from 'minimist';
 import WebSocket from 'ws'; // Import WebSocket
 
@@ -28,6 +27,8 @@ const argv = minimst(process.argv.slice(2), {
         ],
     }
 });
+let wsUrl = url.parse(argv.ws_uri).href;
+
 /////////////////////////// https ///////////////////////////////
 
 
@@ -52,44 +53,45 @@ let server = https.createServer(options, app).listen(port, () => {
 
 /////////////////////////// websocket ///////////////////////////////
 
-const wss = new WebSocket.Server({ server, path: '/groupcall' }); // Create WebSocket server
+const wss = new WebSocket.Server({ server, path: '/groupcall' });
 
 wss.on('connection', ws => {
     ws.on('error', error => {
-        console.error(`Connection %s error : %s`, socket.id, error);
+        console.error(`Connection %s error : %s`, ws.id, error);
     });
 
     ws.on('disconnect', data => {
         console.log(`Connection : %s disconnect`, data);
     });
 
-    ws.on('message', message => {
-        console.log(`Connection: %s receive message`, message.id);
+    ws.on('message', _message => {
+        let message = JSON.parse(_message);
+        console.log(`Connection: %s id`, message.id);
 
         switch (message.id) {
             case 'joinRoom':
-                joinRoom(socket, message, err => {
+                joinRoom(ws, message, err => {
                     if (err) {
                         console.error(`join Room error ${err}`);
                     }
                 });
                 break;
             case 'receiveVideoFrom': //보낸 사람으로 부터 비디오 수신
-                receiveVideoFrom(socket, message.sender, message.sdpOffer, (error) => {
+                receiveVideoFrom(ws, message.sender, message.sdpOffer, (error) => {
                     if (error) {
                         console.error(error);
                     }
                 });
                 break;
             case 'leaveRoom': //방 나가기
-                leaveRoom(socket, (error) => {
+                leaveRoom(ws, (error) => {
                     if (error) {
                         console.error(error);
                     }
                 });
                 break;
             case 'onIceCandidate':
-                addIceCandidate(socket, message, (error) => {
+                addIceCandidate(ws, message, (error) => {
                     if (error) {
                         console.error(error);
                     }
@@ -98,59 +100,6 @@ wss.on('connection', ws => {
         }
     });
 });
-
-// let io = socketIO(server).path('/groupcall');
-// let wsUrl = url.parse(argv.ws_uri).href;
-//
-// io.on('connection', socket => {
-//     socket.on('error', error => {
-//         console.error(`Connection %s error : %s`, socket.id, error);
-//     });
-//
-//     socket.on('disconnect', data => {
-//         console.log(`Connection : %s disconnect`, data);
-//     });
-//
-//     socket.on('message', message => {
-//         console.log(`Connection: %s receive message`, message.id);
-//
-//         switch (message.id) {
-//             case 'joinRoom':
-//                 joinRoom(socket, message, err => {
-//                     if (err) {
-//                         console.error(`join Room error ${err}`);
-//                     }
-//                 });
-//                 break;
-//             case 'receiveVideoFrom': //보낸 사람으로 부터 비디오 수신
-//                 receiveVideoFrom(socket, message.sender, message.sdpOffer, (error) => {
-//                     if (error) {
-//                         console.error(error);
-//                     }
-//                 });
-//                 break;
-//             case 'leaveRoom': //방 나가기
-//                 leaveRoom(socket, (error) => {
-//                     if (error) {
-//                         console.error(error);
-//                     }
-//                 });
-//                 break;
-//             case 'onIceCandidate':
-//                 addIceCandidate(socket, message, (error) => {
-//                     if (error) {
-//                         console.error(error);
-//                     }
-//                 });
-//                 break;
-//             default:
-//                 socket.emit({id: 'error', msg: `Invalid message ${message}`});
-//         }
-//     });
-//
-// });
-
-
 /**
  * 
  * @param {*} socket 

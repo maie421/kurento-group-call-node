@@ -140,7 +140,7 @@ function leaveRoom() {
 	document.getElementById('join').style.display = 'block';
 	document.getElementById('room').style.display = 'none';
 
-	socket.close();
+	ws.close();
 }
 
 function receiveVideo(sender) {
@@ -171,6 +171,7 @@ function onParticipantLeft(request) {
 }
 
 function sendMessage(message) {
-	console.log('Senging message: ' + message.id);
-	socket.emit('message', message);
+	var jsonMessage = JSON.stringify(message);
+	console.log('Senging message: ' + jsonMessage);
+	ws.send(jsonMessage);
 }
