@@ -15,19 +15,21 @@
  *
  */
 
-var socket = io('https://' + location.host);
+var ws = new WebSocket('wss://' + location.host + '/groupcall');
 var participants = {};
 var name;
 
 window.onbeforeunload = function() {
-	socket.disconnect();
+	ws.disconnect();
 };
 
-socket.on('connect', () => {
-	console.log('ws connect success');
-});
+ws.onopen = function() {
+	console.log('WebSocket connection opened');
+	// 연결이 열렸을 때 실행되는 코드
+};
 
-socket.on('message', parsedMessage => {
+ws.onmessage = function(event) {
+	var parsedMessage = JSON.parse(event.data);
 	console.info('Received message: ' + parsedMessage.id);
 
 	switch (parsedMessage.id) {
@@ -54,7 +56,7 @@ socket.on('message', parsedMessage => {
 	default:
 		console.error('Unrecognized message', parsedMessage);
 	}
-});
+};
 
 function register() {
 	name = document.getElementById('name').value;

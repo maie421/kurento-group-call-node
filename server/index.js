@@ -1,7 +1,6 @@
 
 import path from 'path';
 import url from 'url';
-import http from 'http';
 import https from 'https';
 import fs from 'fs';
 
@@ -10,6 +9,7 @@ import kurento from 'kurento-client';
 import socketIO from 'socket.io';
 import minimst from 'minimist';
 import cors from 'cors';
+import WebSocket from 'ws'; // Import WebSocket
 
 import { Session, Register } from './lib';
 
@@ -29,19 +29,19 @@ const argv = minimst(process.argv.slice(2), {
         ],
     }
 });
-
-
 /////////////////////////// https ///////////////////////////////
-let app = express();
-app.use(cors());
 
-let asUrl = url.parse(argv.as_uri);
-let port = asUrl.port;
 
 const options = {
     key: fs.readFileSync('./server/keys/server.key'),
     cert: fs.readFileSync('./server/keys/server.crt')
 };
+
+let app = express();
+app.use(cors());
+
+let asUrl = url.parse(argv.as_uri);
+let port = asUrl.port;
 
 let server = https.createServer(options, app).listen(port, () => {
     console.log('Kurento Group Call started');
@@ -54,19 +54,18 @@ let server = https.createServer(options, app).listen(port, () => {
 
 /////////////////////////// websocket ///////////////////////////////
 
-let io = socketIO(server).path('/groupcall');
-let wsUrl = url.parse(argv.ws_uri).href;
+const wss = new WebSocket.Server({ server, path: '/groupcall' }); // Create WebSocket server
 
-io.on('connection', socket => {
-    socket.on('error', error => {
+wss.on('connection', ws => {
+    ws.on('error', error => {
         console.error(`Connection %s error : %s`, socket.id, error);
     });
 
-    socket.on('disconnect', data => {
+    ws.on('disconnect', data => {
         console.log(`Connection : %s disconnect`, data);
     });
 
-    socket.on('message', message => {
+    ws.on('message', message => {
         console.log(`Connection: %s receive message`, message.id);
 
         switch (message.id) {
@@ -98,12 +97,60 @@ io.on('connection', socket => {
                     }
                 });
                 break;
-            default:
-                socket.emit({id: 'error', msg: `Invalid message ${message}`});
         }
     });
-
 });
+
+// let io = socketIO(server).path('/groupcall');
+// let wsUrl = url.parse(argv.ws_uri).href;
+//
+// io.on('connection', socket => {
+//     socket.on('error', error => {
+//         console.error(`Connection %s error : %s`, socket.id, error);
+//     });
+//
+//     socket.on('disconnect', data => {
+//         console.log(`Connection : %s disconnect`, data);
+//     });
+//
+//     socket.on('message', message => {
+//         console.log(`Connection: %s receive message`, message.id);
+//
+//         switch (message.id) {
+//             case 'joinRoom':
+//                 joinRoom(socket, message, err => {
+//                     if (err) {
+//                         console.error(`join Room error ${err}`);
+//                     }
+//                 });
+//                 break;
+//             case 'receiveVideoFrom': //보낸 사람으로 부터 비디오 수신
+//                 receiveVideoFrom(socket, message.sender, message.sdpOffer, (error) => {
+//                     if (error) {
+//                         console.error(error);
+//                     }
+//                 });
+//                 break;
+//             case 'leaveRoom': //방 나가기
+//                 leaveRoom(socket, (error) => {
+//                     if (error) {
+//                         console.error(error);
+//                     }
+//                 });
+//                 break;
+//             case 'onIceCandidate':
+//                 addIceCandidate(socket, message, (error) => {
+//                     if (error) {
+//                         console.error(error);
+//                     }
+//                 });
+//                 break;
+//             default:
+//                 socket.emit({id: 'error', msg: `Invalid message ${message}`});
+//         }
+//     });
+//
+// });
 
 
 /**
