@@ -8,7 +8,6 @@ import express from 'express';
 import kurento from 'kurento-client';
 import socketIO from 'socket.io';
 import minimst from 'minimist';
-import cors from 'cors';
 import WebSocket from 'ws'; // Import WebSocket
 
 import { Session, Register } from './lib';
@@ -38,7 +37,6 @@ const options = {
 };
 
 let app = express();
-app.use(cors());
 
 let asUrl = url.parse(argv.as_uri);
 let port = asUrl.port;
