@@ -23,7 +23,6 @@ const argv = minimst(process.argv.slice(2), {
         ws_uri: 'ws://13.124.5.88:8888/kurento',
         ice_servers: [
             "stun:stun.l.google.com:19302",
-            "stun:stun1.l.google.com:19302",
         ],
     }
 });
@@ -91,6 +90,7 @@ wss.on('connection', ws => {
                 });
                 break;
             case 'onIceCandidate':
+                console.log("onIceCandidate"+ message);
                 addIceCandidate(ws, message, (error) => {
                     if (error) {
                         console.error(error);
@@ -188,8 +188,6 @@ function join(socket, room, userName, callback) {
         //미디어 정보 사이즈 저장
         userSession.setOutgoingMedia(outgoingMedia);
 
-        // add ice candidate the get sent before endpoint is established
-        // socket.id : room iceCandidate Queue
         let iceCandidateQueue = userSession.iceCandidateQueue[userSession.name];
         if (iceCandidateQueue) {
             while (iceCandidateQueue.length) {
@@ -322,7 +320,7 @@ function leaveRoom(socket, callback) {
     for (var i in usersInRoom) {
         var user = usersInRoom[i];
 
-        user.incomingMedia[userSession.name].release();
+        // user.incomingMedia[userSession.name].release();
         delete user.incomingMedia[userSession.name];
         //참여자가 회의 또는 채팅에서 나간 경우 그 참여자의 데이터를 정리하고 삭제
         user.sendMessage(data);
